@@ -1,0 +1,1 @@
+Das Bild zeigt ein Diagramm. Beschreibe Achsen, Reihen und extrahiere alle ablesbaren Datenpunkte und Werte.

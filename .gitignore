@@ -1,0 +1,15 @@
+# Eingabe-PDFs
+*.pdf
+
+# Extraktions-Ergebnisse
+output/
+*_final.txt
+review_state.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

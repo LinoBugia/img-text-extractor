@@ -1,0 +1,1 @@
+Gib alle mathematischen Formeln im Bild als LaTeX wieder.

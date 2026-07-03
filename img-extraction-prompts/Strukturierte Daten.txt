@@ -1,0 +1,1 @@
+Extrahiere alle strukturierten Daten aus dem Bild als übersichtliche Liste im Format 'Feld: Wert'.

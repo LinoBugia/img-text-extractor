@@ -1,0 +1,1 @@
+Extrahiere sämtlichen im Bild sichtbaren Text wortgetreu. Gib nur den Text aus, keine Kommentare.
