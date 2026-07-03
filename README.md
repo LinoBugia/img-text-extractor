@@ -1,28 +1,29 @@
-# PDF Text- & Bild-Extraktor
+# PDF Text & Image Extractor
 
-Extrahiert per OCR (PaddleOCR) den kompletten Text aus einem PDF und speichert
-eingebettete Bilder separat. Die Position der Bilder wird im Text durch Marker
-der Form `[imageN_dok_<docname>]` festgehalten, sodass sich der Output später
-weiterverarbeiten lässt (z. B. für Embeddings oder LLM-Pipelines).
+Extracts the full text of a PDF via OCR (PaddleOCR) and saves embedded images
+separately. Image positions are preserved in the text through markers of the
+form `[imageN_dok_<docname>]`, so the output can be post-processed later
+(e.g. for embeddings or LLM pipelines). A GUI lets you review every image and
+replace its marker with model-generated text from a local vision LLM (Ollama).
 
-Funktioniert auch mit gescannten PDFs ohne Textlayer, da der Text per OCR aus
-den gerenderten Seiten gelesen wird.
+Also works with scanned PDFs that have no text layer, since the text is read
+via OCR from the rendered pages.
 
 ## Setup
 
-Benötigt Python 3.8–3.12.
+Requires Python 3.8–3.12.
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install paddlepaddle paddleocr pymupdf pillow customtkinter requests
 ```
 
-Für die Bild-zu-Text-Verarbeitung in der GUI muss außerdem
-[Ollama](https://ollama.com) laufen, mit mindestens einem Vision-Modell
-(z. B. `ollama pull qwen2.5vl:7b`).
+For the image-to-text step in the GUI, [Ollama](https://ollama.com) must be
+running with at least one vision model installed
+(e.g. `ollama pull qwen2.5vl:7b`).
 
-Beim ersten Lauf lädt PaddleOCR die OCR-Modelle automatisch herunter
-(nach `~/.paddlex/official_models/`) — das dauert einmalig ein bis zwei Minuten.
+On the first run, PaddleOCR automatically downloads its OCR models
+(to `~/.paddlex/official_models/`) — this takes a minute or two, once.
 
 ## GUI
 
@@ -30,85 +31,85 @@ Beim ersten Lauf lädt PaddleOCR die OCR-Modelle automatisch herunter
 .venv/bin/python gui.py
 ```
 
-Die App hat zwei Tabs:
+The app has two tabs:
 
-**1. PDF-Extraktion** — PDF wählen, Extraktion starten. Erzeugt die unten
-beschriebene Output-Struktur (identisch zur CLI).
+**1. PDF Extraction** — pick a PDF, start the extraction. Produces the output
+structure described below (identical to the CLI).
 
-**2. Bild-Review** — extrahierten Ordner (`output/<docname>`) öffnen und alle
-Bilder nacheinander durchgehen. Zu jedem Bild werden Vorschau und der
-Textkontext um den Bild-Tag angezeigt. Pro Bild entscheidet man:
+**2. Image Review** — open an extracted folder (`output/<docname>`) and step
+through all images one by one. For each image you see a preview plus the text
+context around its marker. Per image you decide:
 
-- **✗ Verwerfen** — der `[imageN_dok_…]`-Tag wird sofort aus der `.txt`
-  entfernt, das Bild wird nicht verarbeitet.
-- **✓ Annehmen** — einen Extraktions-Prompt zuweisen, optional ergänzt um
-  einen freien Zusatz-Prompt (z. B. zum Format) und eine maximale
-  Output-Länge in Tokens (Default: 100, wird dem Modell hart über
-  `num_predict` vorgegeben und zusätzlich im Prompt mitgeteilt).
+- **✗ Discard** — the `[imageN_dok_…]` tag is removed from the `.txt`
+  immediately; the image will not be processed.
+- **✓ Accept** — assign an extraction prompt, optionally extended by a free
+  custom prompt (e.g. about the output format) and a maximum output length in
+  tokens (default: 100, enforced on the model via `num_predict` and also
+  stated in the prompt).
 
-Die Prompts liegen als einzelne `.txt`-Dateien im Ordner
-[img-extraction-prompts/](img-extraction-prompts/) und werden beim Start
-der App dynamisch geladen — der Dateiname ist der Anzeigename, der Inhalt
-der Prompt. Eine neue Datei dort anlegen genügt, damit sie in der Auswahl
-erscheint. Mitgeliefert sind 10 Stück (Bildbeschreibung, OCR,
-Tabelle→Markdown, Diagramm, LaTeX-Formeln, Screenshot, Foto, technische
-Zeichnung, Zusammenfassung, strukturierte Daten).
+The prompts live as individual `.txt` files in
+[img-extraction-prompts/](img-extraction-prompts/) and are loaded dynamically
+at app start — the file name is the display name, the file content is the
+prompt. Just drop a new file in there and it shows up in the selection.
+Ten prompts ship with the project (image description, OCR, table→Markdown,
+chart, LaTeX formulas, screenshot, photo, technical drawing, summary,
+structured data).
 
-Die Entscheidungen werden in `review_state.json` im Dokumentordner
-gespeichert — man kann die App also schließen und später weitermachen.
+Decisions are saved to `review_state.json` inside the document folder — you
+can close the app and continue later.
 
-Sind alle Bilder entschieden, wird **„Verarbeitung starten"** aktiv: Ein
-lokales Vision-Modell über Ollama (Auswahl unten, Default `qwen2.5vl:7b` —
-läuft gut mit 24 GB RAM) verarbeitet jedes angenommene Bild mit seinem
-Prompt und ersetzt den Tag im Text durch das Ergebnis, klar abgegrenzt mit
-einem Marker der verwendeten Extraktionsmethode:
+Once every image has been decided, **"Start processing"** becomes active:
+a local vision model served by Ollama (selectable at the bottom, default
+`qwen2.5vl:7b` — runs well within 24 GB RAM) processes each accepted image
+with its prompt and replaces the tag in the text with the result, clearly
+delimited by a marker naming the extraction method used:
 
 ```
 [extraction_method]
-Bildbeschreibung
+Image description
 [/extractionmethod]
-Das Bild zeigt …
+The image shows …
 ```
 
-Das fertige Dokument landet als `<docname>_final.txt` im Dokumentordner;
-die originale `.txt` mit den Tags bleibt erhalten.
+The finished document is written as `<docname>_final.txt` into the document
+folder; the original `.txt` with the tags is kept untouched.
 
-## CLI-Verwendung
+## CLI usage
 
 ```bash
-.venv/bin/python extract.py mein_dokument.pdf
+.venv/bin/python extract.py my_document.pdf
 ```
 
-Optionen:
+Options:
 
-| Option | Beschreibung | Default |
+| Option | Description | Default |
 |---|---|---|
-| `-o`, `--output` | Wurzelverzeichnis für die Ausgabe | `./output` |
-| `--lang` | OCR-Sprache (z. B. `de`, `en`, `ch`) | `de` |
+| `-o`, `--output` | Root directory for the output | `./output` |
+| `--lang` | OCR language (e.g. `de`, `en`, `ch`) | `de` |
 
-Beispiel:
+Example:
 
 ```bash
-.venv/bin/python extract.py rechnung.pdf -o ergebnisse --lang de
+.venv/bin/python extract.py invoice.pdf -o results --lang de
 ```
 
 ## Output
 
-Pro PDF entsteht ein Ordner mit dem Dokumentnamen:
+Each PDF produces a folder named after the document:
 
 ```
 output/<docname>/
-├── <docname>.txt        # kompletter Text in Lesereihenfolge,
-│                        # Bilder als [imageN_dok_<docname>] markiert
-├── annotated_pages/     # Seiten-Renders mit eingezeichneten Bounding-Boxes
-│   ├── page001.png      #   blau = erkannte Textzeilen, rot = Bilder
+├── <docname>.txt        # full text in reading order,
+│                        # images marked as [imageN_dok_<docname>]
+├── annotated_pages/     # page renders with drawn bounding boxes
+│   ├── page001.png      #   blue = detected text lines, red = images
 │   └── ...
-└── images/              # eingebettete Bilder in Originalqualität
+└── images/              # embedded images in original quality
     ├── image1_dok_<docname>.png
     └── ...
 ```
 
-Beispiel für den Inhalt der `.txt`:
+Example `.txt` content:
 
 ```
 ===== Seite 1 =====
@@ -118,30 +119,30 @@ Hier steht Text ueber dem Bild.
 Und hier Text unter dem Bild.
 ```
 
-## Funktionsweise
+## How it works
 
-1. Jede PDF-Seite wird mit PyMuPDF als Bild gerendert (200 DPI).
-2. PaddleOCR erkennt die Textzeilen samt Bounding-Boxes und Confidence.
-3. Eingebettete Bilder werden per PyMuPDF direkt aus dem PDF extrahiert
-   (Originaldaten, kein Ausschnitt aus dem Render) und ihre Position auf der
-   Seite bestimmt.
-4. Textzeilen und Bildmarker werden nach Position sortiert
-   (oben → unten, bei gleicher Höhe links → rechts) und in die `.txt` geschrieben.
-5. Pro Seite wird ein annotiertes Render mit allen Boxen gespeichert.
+1. Each PDF page is rendered as an image with PyMuPDF (200 DPI).
+2. PaddleOCR detects the text lines including bounding boxes and confidence.
+3. Embedded images are extracted directly from the PDF via PyMuPDF
+   (original data, not a crop from the render) and their position on the
+   page is determined.
+4. Text lines and image markers are sorted by position
+   (top → bottom, left → right at equal height) and written to the `.txt`.
+5. For each page, an annotated render with all boxes is saved.
 
-## Konfiguration
+## Configuration
 
-Oben in [extract.py](extract.py) anpassbar:
+Adjustable at the top of [extract.py](extract.py):
 
-- `DPI` (Default `200`) — Renderauflösung für OCR und annotierte Seiten.
-  Höher = genauere Erkennung bei kleiner Schrift, aber langsamer.
-- `MIN_CONFIDENCE` (Default `0.5`) — OCR-Zeilen unterhalb dieser Confidence
-  werden verworfen.
+- `DPI` (default `200`) — render resolution for OCR and annotated pages.
+  Higher = better recognition of small print, but slower.
+- `MIN_CONFIDENCE` (default `0.5`) — OCR lines below this confidence are
+  dropped.
 
-## Bekannte Grenzen
+## Known limitations
 
-- Bei mehrspaltigen Layouts kann die zeilenweise Sortierung Spalten vermischen.
-- Vektorgrafiken (Zeichnungen direkt im PDF, keine eingebetteten Rasterbilder)
-  werden nicht als Bilder extrahiert.
-- Auf Apple Silicon läuft PaddlePaddle nur auf der CPU — funktioniert, ist aber
-  bei großen Dokumenten entsprechend langsamer als mit GPU.
+- With multi-column layouts, the line-based sorting can mix up columns.
+- Vector graphics (drawings directly in the PDF, not embedded raster images)
+  are not extracted as images.
+- On Apple Silicon, PaddlePaddle runs on the CPU only — it works, but is
+  correspondingly slower than with a GPU on large documents.
