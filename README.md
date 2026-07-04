@@ -73,6 +73,32 @@ The LLM-generated text for the image …
 The finished document is written as `<docname>_final.txt` into the document
 folder; the original `.txt` with the tags is kept untouched.
 
+Example — a pipeline diagram on page 4 of a lecture slide deck, processed
+with the "Diagramm und Chart" prompt:
+
+```
+===== Seite 4 =====
+The image processing pipeline: from data to knowledge
+[extraction_method: Diagramm und Chart]
+1. Image
+2. Pre-processed Image
+3. Segmentation
+4. Segmented Image
+5. Recognition
+6. Object Representation and Description of the shapes
+7. Measurement
+[/extraction_method]
+Image acquisition: capture and digitize the physical scene into a digital image.
+Preprocessing: enhance image quality (e.g., noise reduction, contrast adjustment).
+...
+```
+
+Text that is part of the image itself (axis labels, in-diagram captions) is
+filtered out of the surrounding OCR text beforehand — see
+[Known limitations](#known-limitations) and step 4 under
+[How it works](#how-it-works) — so it doesn't clutter the document twice,
+once as raw OCR fragments and once inside the vision model's description.
+
 ## CLI usage
 
 ```bash
@@ -101,7 +127,8 @@ output/<docname>/
 ├── <docname>.txt        # full text in reading order,
 │                        # images marked as [imageN_dok_<docname>]
 ├── annotated_pages/     # page renders with drawn bounding boxes
-│   ├── page001.png      #   blue = detected text lines, red = images
+│   ├── page001.png      #   blue = kept text lines, grey = dropped
+│   │                    #   (text inside an image), red = images
 │   └── ...
 └── images/              # embedded images in original quality
     ├── image1_dok_<docname>.png
@@ -125,9 +152,13 @@ Und hier Text unter dem Bild.
 3. Embedded images are extracted directly from the PDF via PyMuPDF
    (original data, not a crop from the render) and their position on the
    page is determined.
-4. Text lines and image markers are sorted by position
+4. OCR text lines that lie mostly (>50%) inside an image area are dropped —
+   that text belongs to the image (axis labels, in-diagram captions) and
+   would otherwise clutter the `.txt`; it's captured later by the vision
+   model instead. Dropped lines are drawn in grey in the annotated pages.
+5. Remaining text lines and image markers are sorted by position
    (top → bottom, left → right at equal height) and written to the `.txt`.
-5. For each page, an annotated render with all boxes is saved.
+6. For each page, an annotated render with all boxes is saved.
 
 ## Configuration
 
