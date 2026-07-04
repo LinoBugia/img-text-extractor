@@ -1,1 +1,1 @@
-Extrahiere alle strukturierten Daten aus dem Bild als übersichtliche Liste im Format 'Feld: Wert'.
+Extrahiere alle Daten aus dem Bild als Liste "Feld: Wert", ein Paar pro Zeile, Werte wortgetreu inklusive Einheiten. Matrizen oder Zahlengitter als eine Zeile in Kompaktnotation, z. B. Kernel: [1 0 -1; 2 0 -2; 1 0 -1]. Keine Einleitung, kein Kommentar, keine Interpretation — nur die Datenzeilen.

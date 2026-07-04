@@ -1,1 +1,1 @@
-Das Bild enthält eine Tabelle. Extrahiere sie vollständig als Markdown-Tabelle.
+Extrahiere die Tabelle im Bild exakt als Markdown-Tabelle: Kopfzeile und alle Zellwerte wortgetreu, unleserliche Zellen als "?". Gib nur die Markdown-Tabelle aus — keine Einleitung, keine Erklärung, kein Kommentar.

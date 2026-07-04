@@ -90,12 +90,34 @@ def extract_images(
     return elements, counter
 
 
+def lies_inside_image(el: dict, image_elements: list[dict], threshold: float = 0.5) -> bool:
+    """True, wenn die Textzeile überwiegend innerhalb einer Bildfläche liegt.
+
+    Solcher Text gehört zum Bildinhalt (Achsenbeschriftungen, Text in Diagrammen)
+    und würde die .txt nur zumüllen — er wird später vom Vision-Modell erfasst.
+    """
+    xs = [p[0] for p in el["poly"]]
+    ys = [p[1] for p in el["poly"]]
+    tx0, ty0, tx1, ty1 = min(xs), min(ys), max(xs), max(ys)
+    area = (tx1 - tx0) * (ty1 - ty0)
+    if area <= 0:
+        return False
+    for img_el in image_elements:
+        x0, y0, x1, y1 = img_el["rect"]
+        ix = max(0.0, min(tx1, x1) - max(tx0, x0))
+        iy = max(0.0, min(ty1, y1) - max(ty0, y0))
+        if ix * iy / area > threshold:
+            return True
+    return False
+
+
 def annotate_page(page_img: Image.Image, elements: list[dict]) -> Image.Image:
     annotated = page_img.copy()
     draw = ImageDraw.Draw(annotated)
     for el in elements:
         if el["kind"] == "text":
-            draw.polygon(el["poly"], outline=(0, 130, 255), width=2)
+            color = (160, 160, 160) if el.get("dropped") else (0, 130, 255)
+            draw.polygon(el["poly"], outline=color, width=2)
         else:
             draw.rectangle(el["rect"], outline=(255, 0, 0), width=3)
             draw.text((el["rect"][0] + 4, el["rect"][1] + 4), el["content"], fill=(255, 0, 0))
@@ -126,11 +148,14 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
         progress(f"Seite {page_no}/{len(doc)} ...")
         page_img = page_to_pil(page, zoom)
 
-        elements = ocr_page(ocr, page_img)
+        text_elements = ocr_page(ocr, page_img)
         image_elements, img_counter = extract_images(
             doc, page, zoom, docname, images_dir, img_counter
         )
-        elements += image_elements
+        # Text innerhalb von Bildflächen gehört zum Bild, nicht in die .txt
+        for el in text_elements:
+            el["dropped"] = lies_inside_image(el, image_elements)
+        elements = [el for el in text_elements if not el["dropped"]] + image_elements
 
         # Lesereihenfolge: von oben nach unten, bei gleicher Höhe von links nach rechts
         elements.sort(key=lambda el: (round(el["y"] / 10), el["x"]))
@@ -139,7 +164,7 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
         txt_lines += [el["content"] for el in elements]
         txt_lines.append("")
 
-        annotate_page(page_img, elements).save(
+        annotate_page(page_img, text_elements + image_elements).save(
             annotated_dir / f"page{page_no:03d}.png"
         )
 

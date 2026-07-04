@@ -365,11 +365,25 @@ class ReviewTab:
         self.run_btn.configure(state="disabled")
         threading.Thread(target=self._run, daemon=True).start()
 
+    @staticmethod
+    def marker_context(text: str, marker: str, radius: int = 6) -> str:
+        """Dokumentausschnitt um den Bild-Tag, Tag selbst als Platzhalter markiert."""
+        lines = text.splitlines()
+        for i, line in enumerate(lines):
+            if marker in line:
+                return "\n".join(
+                    lines[max(0, i - radius): i]
+                    + ["<<< HIER STEHT DAS BILD >>>"]
+                    + lines[i + 1: i + 1 + radius]
+                )
+        return ""
+
     def _run(self):
         ui = lambda msg: self.app.after(0, self.log_msg, msg)
         model = self.model_var.get()
         try:
             text = self.txt_path.read_text(encoding="utf-8")
+            orig_text = text  # Kontext immer aus dem Original, ohne frühere Ersetzungen
             accepted = [
                 img for img in self.images
                 if self.state.get(img.stem, {}).get("status") == "accepted"
@@ -381,14 +395,28 @@ class ReviewTab:
                 prompt = PROMPTS[entry["prompt"]]
                 if entry.get("custom"):
                     prompt += "\n" + entry["custom"]
-                prompt += f"\nAntworte in maximal {max_tokens} Tokens."
+                ctx = self.marker_context(orig_text, f"[{img.stem}]")
+                if ctx:
+                    prompt += (
+                        "\n\nZur Einordnung: Das Bild steht an der markierten "
+                        "Stelle in diesem Dokumentausschnitt:\n"
+                        f"---\n{ctx}\n---"
+                    )
+                max_lines = max(3, max_tokens // 20)
+                prompt += (
+                    "\nWichtigstes Ziel: Deine Antwort muss ALLE relevanten "
+                    "Informationen des Bildes enthalten, sodass das Bild im "
+                    "Dokument vollständig durch deinen Text ersetzt werden kann. "
+                    "Wiederhole dabei nicht den umgebenden Dokumenttext."
+                    f"\nAntworte in maximal {max_tokens} Tokens und höchstens "
+                    f"{max_lines} Zeilen. Fasse dich so kurz wie möglich."
+                )
                 ui(f"[{n}/{len(accepted)}] {img.name} ({entry['prompt']}, max {max_tokens} Tokens) …")
                 result = query_vision_model(model, prompt, img, max_tokens)
                 replacement = (
-                    "[extraction_method]\n"
-                    f"{entry['prompt']}\n"
-                    "[/extractionmethod]\n"
-                    f"{result}"
+                    f"[extraction_method: {entry['prompt']}]\n"
+                    f"{result}\n"
+                    "[/extraction_method]"
                 )
                 text = text.replace(f"[{img.stem}]", replacement)
             final = self.txt_path.with_name(self.txt_path.stem + "_final.txt")

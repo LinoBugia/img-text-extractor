@@ -1,1 +1,1 @@
-Gib alle mathematischen Formeln im Bild als LaTeX wieder.
+Gib alle mathematischen Formeln im Bild exakt als LaTeX wieder, eine Formel pro Zeile in $$...$$. Symbole, Indizes und Exponenten genau übernehmen. Matrizen als pmatrix in einer Zeile, z. B. $$\begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix}$$ — niemals Zahlen einzeln untereinander auflisten. Keine Erklärungen, keine Herleitungen, nur die Formeln.

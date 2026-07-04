@@ -61,14 +61,13 @@ can close the app and continue later.
 Once every image has been decided, **"Start processing"** becomes active:
 a local vision model served by Ollama (selectable at the bottom, default
 `qwen2.5vl:7b` — runs well within 24 GB RAM) processes each accepted image
-with its prompt and replaces the tag in the text with the result, clearly
-delimited by a marker naming the extraction method used:
+with its prompt and replaces the tag in the text with the result, wrapped in
+markers naming the extraction method used:
 
 ```
-[extraction_method]
-Image description
-[/extractionmethod]
-The image shows …
+[extraction_method: Bildbeschreibung]
+The LLM-generated text for the image …
+[/extraction_method]
 ```
 
 The finished document is written as `<docname>_final.txt` into the document
@@ -146,3 +145,7 @@ Adjustable at the top of [extract.py](extract.py):
   are not extracted as images.
 - On Apple Silicon, PaddlePaddle runs on the CPU only — it works, but is
   correspondingly slower than with a GPU on large documents.
+
+## License
+
+[MIT](LICENSE)

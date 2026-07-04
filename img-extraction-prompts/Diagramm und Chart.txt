@@ -1,1 +1,4 @@
-Das Bild zeigt ein Diagramm. Beschreibe Achsen, Reihen und extrahiere alle ablesbaren Datenpunkte und Werte.
+Extrahiere alle Informationen aus dem Diagramm.
+Bei Mess-/Datendiagrammen (Plot, Balken, Kurve) als kurze Liste "Feld: Wert": Typ, Titel, Achsen mit Einheiten und Wertebereichen, Datenreihen/Legende, konkret ablesbare Werte (Maximum, Minimum, markante Punkte), Verlauf in einem Satz.
+Bei Ablauf-/Prozess-/Blockdiagrammen stattdessen: die Schritte bzw. Blöcke mit ihren wortgetreuen Beschriftungen in Reihenfolge als nummerierte Liste, und was die Pfeile verbinden.
+Nur ablesbare Fakten — keine Vermutungen, keine Interpretation, keine Einleitung.

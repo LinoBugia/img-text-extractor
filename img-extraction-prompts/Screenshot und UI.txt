@@ -1,1 +1,1 @@
-Das Bild ist ein Screenshot. Beschreibe die Anwendung, die sichtbaren UI-Elemente und allen sichtbaren Text.
+Das Bild ist ein Software-Screenshot. Gib an: (1) Anwendung bzw. Fenster-/Dateititel, falls erkennbar, (2) den vollständigen inhaltlich relevanten Text/Code/Daten wortgetreu. Ignoriere Fensterrahmen, Statusleisten, Menü-Deko und Lizenzhinweise, außer sie tragen echte Information. Keine Vermutungen über Betriebssystem oder Zweck, keine Aufzählung von UI-Elementen, kein Schlusskommentar.

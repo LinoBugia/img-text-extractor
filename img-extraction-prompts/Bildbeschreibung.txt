@@ -1,1 +1,1 @@
-Beschreibe den Inhalt dieses Bildes präzise und sachlich auf Deutsch.
+Beschreibe sachlich, was auf dem Bild zu sehen ist. Beginne direkt mit dem Inhalt, ohne Einleitung wie "Das Bild zeigt". Nur was tatsächlich sichtbar ist — keine Vermutungen ("vermutlich", "könnte"), keine Interpretation, kein Schlusskommentar. Antworte auf Deutsch als kompakter Fließtext ohne Markdown.
