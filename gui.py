@@ -404,12 +404,15 @@ class ReviewTab:
                     )
                 max_lines = max(3, max_tokens // 20)
                 prompt += (
-                    "\nWichtigstes Ziel: Deine Antwort muss ALLE relevanten "
-                    "Informationen des Bildes enthalten, sodass das Bild im "
+                    "\nWichtigstes Ziel: Deine Antwort muss ALLE Informationen "
+                    "des Bildes zuverlässig enthalten, sodass das Bild im "
                     "Dokument vollständig durch deinen Text ersetzt werden kann. "
-                    "Wiederhole dabei nicht den umgebenden Dokumenttext."
-                    f"\nAntworte in maximal {max_tokens} Tokens und höchstens "
-                    f"{max_lines} Zeilen. Fasse dich so kurz wie möglich."
+                    "Denke zuerst über den Bildaufbau nach, gib aber nur das "
+                    "fertige Ergebnis aus. Wiederhole nicht den umgebenden "
+                    "Dokumenttext."
+                    f"\nHalte dich an maximal {max_tokens} Tokens und höchstens "
+                    f"{max_lines} Zeilen — kürze durch kompakte Notation, "
+                    "niemals durch Weglassen von Information."
                 )
                 ui(f"[{n}/{len(accepted)}] {img.name} ({entry['prompt']}, max {max_tokens} Tokens) …")
                 result = query_vision_model(model, prompt, img, max_tokens)
