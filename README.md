@@ -15,7 +15,7 @@ Requires Python 3.8–3.12.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install paddlepaddle paddleocr pymupdf pillow customtkinter requests
+.venv/bin/pip install -r requirements.txt
 ```
 
 For the image-to-text step in the GUI, [Ollama](https://ollama.com) must be
