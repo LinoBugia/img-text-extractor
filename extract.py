@@ -43,6 +43,7 @@ def ocr_page(ocr: PaddleOCR, page_img: Image.Image) -> list[dict]:
                 {
                     "kind": "text",
                     "y": min(ys),
+                    "y1": max(ys),
                     "x": min(xs),
                     "content": text.strip(),
                     "poly": [(float(p[0]), float(p[1])) for p in poly],
@@ -81,6 +82,7 @@ def extract_images(
             {
                 "kind": "image",
                 "y": rect[1],
+                "y1": rect[3],
                 "x": rect[0],
                 "content": f"[{name}]",
                 "rect": rect,
@@ -88,6 +90,33 @@ def extract_images(
         )
         counter += 1
     return elements, counter
+
+
+def sort_reading_order(elements: list[dict]) -> list[dict]:
+    """Sortiert in Lesereihenfolge: Bänder von oben nach unten, darin links nach rechts.
+
+    Elemente, die sich vertikal überlappen — etwa zwei nebeneinanderstehende
+    Abbildungen —, bilden ein gemeinsames Band und werden dadurch nach ihrer
+    x-Position geordnet statt nach der Oberkante. Ein Vergleich der Oberkanten
+    allein würde die höher beginnende rechte Abbildung vor die linke ziehen.
+    """
+    bands: list[list[dict]] = []
+    for el in sorted(elements, key=lambda e: e["y"]):
+        for band in bands:
+            top = min(b["y"] for b in band)
+            bottom = max(b["y1"] for b in band)
+            overlap = min(bottom, el["y1"]) - max(top, el["y"])
+            smaller = max(1.0, min(bottom - top, el["y1"] - el["y"]))
+            if overlap > 0.5 * smaller:
+                band.append(el)
+                break
+        else:
+            bands.append([el])
+
+    ordered = []
+    for band in bands:
+        ordered += sorted(band, key=lambda e: e["x"])
+    return ordered
 
 
 def lies_inside_image(el: dict, image_elements: list[dict], threshold: float = 0.5) -> bool:
@@ -157,8 +186,7 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
             el["dropped"] = lies_inside_image(el, image_elements)
         elements = [el for el in text_elements if not el["dropped"]] + image_elements
 
-        # Lesereihenfolge: von oben nach unten, bei gleicher Höhe von links nach rechts
-        elements.sort(key=lambda el: (round(el["y"] / 10), el["x"]))
+        elements = sort_reading_order(elements)
 
         txt_lines.append(f"===== Seite {page_no} =====")
         txt_lines += [el["content"] for el in elements]

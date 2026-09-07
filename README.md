@@ -156,8 +156,11 @@ Und hier Text unter dem Bild.
    that text belongs to the image (axis labels, in-diagram captions) and
    would otherwise clutter the `.txt`; it's captured later by the vision
    model instead. Dropped lines are drawn in grey in the annotated pages.
-5. Remaining text lines and image markers are sorted by position
-   (top → bottom, left → right at equal height) and written to the `.txt`.
+5. Remaining text lines and image markers are sorted into reading order:
+   elements are grouped into horizontal bands by vertical overlap, bands run
+   top → bottom, and within a band elements run left → right. This keeps
+   side-by-side figures in their visual order instead of ordering them by
+   whichever one happens to start higher on the page.
 6. For each page, an annotated render with all boxes is saved.
 
 ## Configuration
@@ -171,7 +174,10 @@ Adjustable at the top of [extract.py](extract.py):
 
 ## Known limitations
 
-- With multi-column layouts, the line-based sorting can mix up columns.
+- With multi-column layouts, the band-based sorting can still mix up columns:
+  headings that sit above side-by-side figures are grouped into their own band,
+  so both headings come before both figures rather than each staying with its
+  figure.
 - Vector graphics (drawings directly in the PDF, not embedded raster images)
   are not extracted as images.
 - On Apple Silicon, PaddlePaddle runs on the CPU only — it works, but is
