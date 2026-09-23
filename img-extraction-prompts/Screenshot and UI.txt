@@ -1,0 +1,1 @@
+The image is a software screenshot. State: (1) the application or window/file title, if recognisable, (2) the full text, code or data content, verbatim. Ignore window chrome, status bars, menu decoration and licence notices unless they carry real information. No guesses about the operating system or the purpose, no inventory of UI elements, no closing remark.

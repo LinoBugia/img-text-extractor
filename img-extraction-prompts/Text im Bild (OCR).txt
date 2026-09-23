@@ -1,1 +1,0 @@
-Gib ausschließlich den im Bild sichtbaren Text wortgetreu in Lesereihenfolge wieder. Behalte sinnvolle Zeilenumbrüche bei. Keine Beschreibung, keine Einleitung, keine Kommentare, keine Übersetzung — nur der Text selbst.

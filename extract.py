@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""PDF-Text- und Bild-Extraktor mit PaddleOCR.
+"""PDF text and image extractor built on PaddleOCR.
 
-Nimmt ein PDF, extrahiert per OCR den Text und schreibt ihn in
-<output>/<docname>/<docname>.txt. Eingebettete Bilder werden an ihrer
-Position im Text als [imageN_dok_<docname>] markiert und separat in
-<output>/<docname>/images/ gespeichert. Zusätzlich landet pro Seite ein
-Render mit eingezeichneten Bounding-Boxes in
-<output>/<docname>/annotated_pages/.
+Takes a PDF, extracts the text via OCR and writes it to
+<output>/<docname>/<docname>.txt. Embedded images are marked at their
+position in the text as [imageN_dok_<docname>] and stored separately in
+<output>/<docname>/images/. For every page, a render with the detected
+bounding boxes drawn on it is saved to <output>/<docname>/annotated_pages/.
 """
 
 import argparse
@@ -174,7 +173,7 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
     txt_lines: list[str] = []
 
     for page_no, page in enumerate(doc, start=1):
-        progress(f"Seite {page_no}/{len(doc)} ...")
+        progress(f"Page {page_no}/{len(doc)} ...")
         page_img = page_to_pil(page, zoom)
 
         text_elements = ocr_page(ocr, page_img)
@@ -188,7 +187,7 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
 
         elements = sort_reading_order(elements)
 
-        txt_lines.append(f"===== Seite {page_no} =====")
+        txt_lines.append(f"===== Page {page_no} =====")
         txt_lines += [el["content"] for el in elements]
         txt_lines.append("")
 
@@ -204,21 +203,21 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pdf", type=Path, help="Pfad zum Eingabe-PDF")
+    parser.add_argument("pdf", type=Path, help="Path to the input PDF")
     parser.add_argument(
         "-o", "--output", type=Path, default=Path("output"),
-        help="Wurzelverzeichnis für die Ausgabe (Default: ./output)",
+        help="Root directory for the output (default: ./output)",
     )
     parser.add_argument(
-        "--lang", default="de", help="OCR-Sprache (Default: de)"
+        "--lang", default="de", help="OCR language (default: de)"
     )
     args = parser.parse_args()
 
     if not args.pdf.is_file():
-        sys.exit(f"PDF nicht gefunden: {args.pdf}")
+        sys.exit(f"PDF not found: {args.pdf}")
 
     outdir = process_pdf(args.pdf, args.output, args.lang)
-    print(f"Fertig: {outdir}")
+    print(f"Done: {outdir}")
 
 
 if __name__ == "__main__":

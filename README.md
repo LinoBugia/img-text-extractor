@@ -1,122 +1,77 @@
 # PDF Text & Image Extractor
 
-Extracts the full text of a PDF via OCR (PaddleOCR) and saves embedded images
-separately. Image positions are preserved in the text through markers of the
-form `[imageN_dok_<docname>]`, so the output can be post-processed later
-(e.g. for embeddings or LLM pipelines). A GUI lets you review every image and
-replace its marker with model-generated text from a local vision LLM (Ollama).
+Turns a PDF into a single plain-text file in which the figures have become
+text. OCR reads the pages, so scanned documents work like born-digital ones;
+embedded images are extracted and marked at their position, and a local vision
+model writes each image's content back into the document in place.
 
-Also works with scanned PDFs that have no text layer, since the text is read
-via OCR from the rendered pages.
+You decide per image: discard it, or assign one of ten extraction prompts — a
+chart becomes a list of values, a table becomes Markdown, a formula becomes
+LaTeX. Nothing leaves the machine.
 
-## Setup
+![The Image Review tab: image list with status per image, preview of the selected figure, the surrounding document text, and the prompt and token controls](docs/img/review-gui.png)
 
-Requires Python 3.8–3.12.
+A figure in the extracted text starts as a marker. Accepting it with a prompt
+replaces that marker in place, wrapped so a downstream parser can find the
+boundary between document text and model text again:
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+```text
+[image1_dok_quarterly-report]
 ```
 
-For the image-to-text step in the GUI, [Ollama](https://ollama.com) must be
-running with at least one vision model installed
-(e.g. `ollama pull qwen2.5vl:7b`).
+```text
+[extraction_method: Chart and diagram]
+Bar chart. Title: Revenue (M EUR). X-axis: Quarter (Q1, Q2, Q3, Q4). Y-axis: Revenue (M EUR). Data series: Revenue per quarter. Values: Q1: 24 M EUR, Q2: 38 M EUR, Q3: 31 M EUR, Q4: 47 M EUR. Trend: Revenue increased from Q1 to Q4.
+[/extraction_method]
+```
 
-On the first run, PaddleOCR automatically downloads its OCR models
-(to `~/.paddlex/official_models/`) — this takes a minute or two, once.
+## Quickstart
 
-## GUI
+Needs Python 3.11 or 3.12.
 
 ```bash
+# 1. install
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. vision backend for the image step
+ollama serve                    # https://ollama.com
+ollama pull qwen2.5vl:7b        # ~6 GB, runs within 24 GB RAM
+
+# 3. extract a PDF, then review its images
 .venv/bin/python gui.py
 ```
 
-The app has two tabs:
+On the first extraction PaddleOCR downloads its own OCR models, which takes a
+minute or two once. Ollama is only needed for the image step — extraction and
+review work without it.
 
-**1. PDF Extraction** — pick a PDF, start the extraction. Produces the output
-structure described below (identical to the CLI).
-
-**2. Image Review** — open an extracted folder (`output/<docname>`) and step
-through all images one by one. For each image you see a preview plus the text
-context around its marker. Per image you decide:
-
-- **✗ Discard** — the `[imageN_dok_…]` tag is removed from the `.txt`
-  immediately; the image will not be processed.
-- **✓ Accept** — assign an extraction prompt, optionally extended by a free
-  custom prompt (e.g. about the output format) and a maximum output length in
-  tokens (default: 100, enforced on the model via `num_predict` and also
-  stated in the prompt).
-
-The prompts live as individual `.txt` files in
-[img-extraction-prompts/](img-extraction-prompts/) and are loaded dynamically
-at app start — the file name is the display name, the file content is the
-prompt. Just drop a new file in there and it shows up in the selection.
-Ten prompts ship with the project (image description, OCR, table→Markdown,
-chart, LaTeX formulas, screenshot, photo, technical drawing, summary,
-structured data).
-
-Decisions are saved to `review_state.json` inside the document folder — you
-can close the app and continue later.
-
-Once every image has been decided, **"Start processing"** becomes active:
-a local vision model served by Ollama (selectable at the bottom, default
-`qwen2.5vl:7b` — runs well within 24 GB RAM) processes each accepted image
-with its prompt and replaces the tag in the text with the result, wrapped in
-markers naming the extraction method used:
-
-```
-[extraction_method: Bildbeschreibung]
-The LLM-generated text for the image …
-[/extraction_method]
-```
-
-The finished document is written as `<docname>_final.txt` into the document
-folder; the original `.txt` with the tags is kept untouched.
-
-Example — a pipeline diagram on page 4 of a lecture slide deck, processed
-with the "Diagramm und Chart" prompt:
-
-```
-===== Seite 4 =====
-The image processing pipeline: from data to knowledge
-[extraction_method: Diagramm und Chart]
-1. Image
-2. Pre-processed Image
-3. Segmentation
-4. Segmented Image
-5. Recognition
-6. Object Representation and Description of the shapes
-7. Measurement
-[/extraction_method]
-Image acquisition: capture and digitize the physical scene into a digital image.
-Preprocessing: enhance image quality (e.g., noise reduction, contrast adjustment).
-...
-```
-
-Text that is part of the image itself (axis labels, in-diagram captions) is
-filtered out of the surrounding OCR text beforehand — see
-[Known limitations](#known-limitations) and step 4 under
-[How it works](#how-it-works) — so it doesn't clutter the document twice,
-once as raw OCR fragments and once inside the vision model's description.
-
-## CLI usage
+## Commands
 
 ```bash
-.venv/bin/python extract.py my_document.pdf
+.venv/bin/python gui.py                       # extract, review, describe
+
+.venv/bin/python extract.py report.pdf        # extraction only, no GUI
+.venv/bin/python extract.py report.pdf -o results --lang en
 ```
 
-Options:
+`extract.py` takes `-o/--output` and `--lang`; both are listed with their
+defaults in [docs/configuration.md](docs/configuration.md).
 
-| Option | Description | Default |
-|---|---|---|
-| `-o`, `--output` | Root directory for the output | `./output` |
-| `--lang` | OCR language (e.g. `de`, `en`, `ch`) | `de` |
+## Every image is a decision
 
-Example:
+The extractor never guesses which figures matter. It marks all of them and
+hands the choice to you, because a decorative logo and a diagram carrying the
+argument look identical to a layout parser:
 
-```bash
-.venv/bin/python extract.py invoice.pdf -o results --lang de
-```
+| Decision | What happens to the marker |
+|----------|----------------------------|
+| Discard | Removed from the `.txt` immediately |
+| Accept + prompt | Replaced by the model's text, wrapped in `[extraction_method: <prompt>]` … `[/extraction_method]` |
+
+Decisions persist in `review_state.json`, so a long document can be reviewed
+across several sittings. The walkthrough is in [docs/gui.md](docs/gui.md), the
+prompt library in [docs/prompts.md](docs/prompts.md).
 
 ## Output
 
@@ -124,65 +79,34 @@ Each PDF produces a folder named after the document:
 
 ```
 output/<docname>/
-├── <docname>.txt        # full text in reading order,
-│                        # images marked as [imageN_dok_<docname>]
-├── annotated_pages/     # page renders with drawn bounding boxes
-│   ├── page001.png      #   blue = kept text lines, grey = dropped
-│   │                    #   (text inside an image), red = images
-│   └── ...
-└── images/              # embedded images in original quality
-    ├── image1_dok_<docname>.png
-    └── ...
+├── <docname>.txt         full text in reading order, images as [imageN_dok_<docname>]
+├── <docname>_final.txt   after review: markers replaced by the model's text
+├── review_state.json     per-image decisions, lets a review be resumed
+├── annotated_pages/      page renders with boxes drawn — blue kept, grey dropped, red image
+└── images/               embedded images in original quality
 ```
 
-Example `.txt` content:
+The source `.txt` is never overwritten by a review run, so the same extraction
+can be reviewed again with different prompts.
 
-```
-===== Seite 1 =====
-Dies ist ein Testdokument.
-Hier steht Text ueber dem Bild.
-[image1_dok_testdoc]
-Und hier Text unter dem Bild.
-```
+## Documentation
 
-## How it works
+| Document | Contents |
+|----------|----------|
+| [docs/extraction.md](docs/extraction.md) | Pipeline steps, the image-internal text filter, reading order, limitations |
+| [docs/gui.md](docs/gui.md) | Both tabs, the review loop, how processing runs |
+| [docs/prompts.md](docs/prompts.md) | The ten prompts, adding your own, output length |
+| [docs/configuration.md](docs/configuration.md) | Every constant and CLI flag with its default |
 
-1. Each PDF page is rendered as an image with PyMuPDF (200 DPI).
-2. PaddleOCR detects the text lines including bounding boxes and confidence.
-3. Embedded images are extracted directly from the PDF via PyMuPDF
-   (original data, not a crop from the render) and their position on the
-   page is determined.
-4. OCR text lines that lie mostly (>50%) inside an image area are dropped —
-   that text belongs to the image (axis labels, in-diagram captions) and
-   would otherwise clutter the `.txt`; it's captured later by the vision
-   model instead. Dropped lines are drawn in grey in the annotated pages.
-5. Remaining text lines and image markers are sorted into reading order:
-   elements are grouped into horizontal bands by vertical overlap, bands run
-   top → bottom, and within a band elements run left → right. This keeps
-   side-by-side figures in their visual order instead of ordering them by
-   whichever one happens to start higher on the page.
-6. For each page, an annotated render with all boxes is saved.
+## Project structure
 
-## Configuration
-
-Adjustable at the top of [extract.py](extract.py):
-
-- `DPI` (default `200`) — render resolution for OCR and annotated pages.
-  Higher = better recognition of small print, but slower.
-- `MIN_CONFIDENCE` (default `0.5`) — OCR lines below this confidence are
-  dropped.
-
-## Known limitations
-
-- With multi-column layouts, the band-based sorting can still mix up columns:
-  headings that sit above side-by-side figures are grouped into their own band,
-  so both headings come before both figures rather than each staying with its
-  figure.
-- Vector graphics (drawings directly in the PDF, not embedded raster images)
-  are not extracted as images.
-- On Apple Silicon, PaddlePaddle runs on the CPU only — it works, but is
-  correspondingly slower than with a GPU on large documents.
+| Path | Purpose |
+|------|---------|
+| `extract.py` | CLI and extraction pipeline: render, OCR, image extraction, reading order |
+| `gui.py` | CustomTkinter app: extraction tab, image review, vision-model run |
+| `img-extraction-prompts/` | Prompt library, one `.txt` per prompt |
+| `requirements.txt` | Pinned direct dependencies |
 
 ## License
 
-[MIT](LICENSE)
+MIT — see [LICENSE](LICENSE).

@@ -1,9 +1,0 @@
-Extrahiere alle Informationen aus dem Diagramm. Sieh dir das Diagramm zuerst genau an und überlege, wie es aufgebaut ist und wie die Teile zusammenhängen — gib dann nur das saubere, fertige Ergebnis aus.
-
-WICHTIGSTES KRITERIUM: Vollständigkeit. Jede im Diagramm enthaltene Information muss in der Antwort stehen — alle Beschriftungen wortgetreu, alle Werte, alle Ein- und Ausgänge, Wiederholungsangaben (z. B. "Nx", "×3"), Gruppierungen und Teilbereiche.
-
-Bei Mess-/Datendiagrammen (Plot, Balken, Kurve): Typ, Titel, Achsen mit Einheiten und Wertebereichen, Datenreihen/Legende, alle ablesbaren Werte, Verlauf in einem Satz.
-
-Bei Ablauf-/Prozess-/Blockdiagrammen: Gib den Datenfluss in der tatsächlichen Pfeilrichtung vom Eingang zum Ausgang wieder, als Kette "A → B → C". Bei Verzweigungen oder mehreren parallelen Strängen jeden Strang als eigene Zeile. Gehören Blöcke zu einer benannten oder erkennbaren Gruppe (z. B. Encoder, Decoder, wiederholte Einheit), nenne die Gruppe und ihre Blöcke zusammen. Erfinde keine Verbindungen, die nicht eingezeichnet sind — wenn eine Verbindung unklar ist, kennzeichne sie mit "(unklar)".
-
-Keine Einleitung, keine Floskeln, keine Bewertung — nur das strukturierte Ergebnis.

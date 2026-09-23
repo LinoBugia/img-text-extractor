@@ -40,7 +40,7 @@ def load_prompts() -> dict[str, str]:
         if p.read_text(encoding="utf-8").strip()
     }
     if not prompts:
-        raise SystemExit(f"Keine Prompt-Dateien in {PROMPTS_DIR} gefunden.")
+        raise SystemExit(f"No prompt files found in {PROMPTS_DIR}.")
     return prompts
 
 
@@ -84,18 +84,18 @@ class ExtractTab:
 
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
-        ctk.CTkButton(row, text="PDF wählen …", command=self.pick_pdf).pack(side="left")
-        self.pdf_label = ctk.CTkLabel(row, text="kein PDF gewählt", anchor="w")
+        ctk.CTkButton(row, text="Choose PDF …", command=self.pick_pdf).pack(side="left")
+        self.pdf_label = ctk.CTkLabel(row, text="no PDF chosen", anchor="w")
         self.pdf_label.pack(side="left", padx=10)
 
         row2 = ctk.CTkFrame(parent, fg_color="transparent")
         row2.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
-        ctk.CTkLabel(row2, text="Sprache:").pack(side="left")
+        ctk.CTkLabel(row2, text="Language:").pack(side="left")
         self.lang_var = ctk.StringVar(value="de")
         ctk.CTkEntry(row2, textvariable=self.lang_var, width=60).pack(side="left", padx=(5, 20))
 
         self.start_btn = ctk.CTkButton(
-            parent, text="Extraktion starten", state="disabled", command=self.start
+            parent, text="Start extraction", state="disabled", command=self.start
         )
         self.start_btn.grid(row=2, column=0, sticky="w", padx=10, pady=5)
 
@@ -122,14 +122,14 @@ class ExtractTab:
     def _run(self):
         ui = lambda msg: self.app.after(0, self.log_msg, msg)
         try:
-            ui(f"Starte Extraktion: {self.pdf_path.name}")
+            ui(f"Starting extraction: {self.pdf_path.name}")
             outdir = process_pdf(
                 self.pdf_path, Path("output"), self.lang_var.get(), progress=ui
             )
-            ui(f"Fertig: {outdir}")
-            ui("→ Wechsle zum Tab 'Bild-Review', um die Bilder zu bearbeiten.")
+            ui(f"Done: {outdir}")
+            ui("→ Switch to the 'Image Review' tab to work through the images.")
         except Exception as e:  # noqa: BLE001 — alles im Log zeigen statt crashen
-            ui(f"FEHLER: {e}")
+            ui(f"ERROR: {e}")
         finally:
             self.app.after(0, lambda: self.start_btn.configure(state="normal"))
 
@@ -149,11 +149,11 @@ class ReviewTab:
 
         top = ctk.CTkFrame(parent, fg_color="transparent")
         top.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 5))
-        ctk.CTkButton(top, text="Extrahierten Ordner öffnen …", command=self.pick_folder).pack(side="left")
-        self.folder_label = ctk.CTkLabel(top, text="kein Ordner geöffnet", anchor="w")
+        ctk.CTkButton(top, text="Open extracted folder …", command=self.pick_folder).pack(side="left")
+        self.folder_label = ctk.CTkLabel(top, text="no folder opened", anchor="w")
         self.folder_label.pack(side="left", padx=10)
 
-        self.listframe = ctk.CTkScrollableFrame(parent, width=230, label_text="Bilder")
+        self.listframe = ctk.CTkScrollableFrame(parent, width=230, label_text="Images")
         self.listframe.grid(row=1, column=0, sticky="nsw", padx=(10, 5), pady=5)
 
         right = ctk.CTkFrame(parent)
@@ -161,7 +161,7 @@ class ReviewTab:
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(0, weight=1)
 
-        self.preview = ctk.CTkLabel(right, text="Bild-Vorschau", anchor="center")
+        self.preview = ctk.CTkLabel(right, text="Image preview", anchor="center")
         self.preview.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         self.context_box = ctk.CTkTextbox(right, height=90, state="disabled", wrap="word")
@@ -176,12 +176,12 @@ class ReviewTab:
         ctk.CTkOptionMenu(controls, variable=self.prompt_var, values=list(PROMPTS)).grid(
             row=0, column=1, sticky="ew", padx=5, pady=2
         )
-        ctk.CTkLabel(controls, text="Zusatz (optional):").grid(row=1, column=0, sticky="w")
+        ctk.CTkLabel(controls, text="Extra (optional):").grid(row=1, column=0, sticky="w")
         self.custom_entry = ctk.CTkEntry(
-            controls, placeholder_text="z. B. 'Antworte als Markdown-Liste'"
+            controls, placeholder_text="e.g. 'Answer as a Markdown list'"
         )
         self.custom_entry.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
-        ctk.CTkLabel(controls, text="Max. Tokens:").grid(row=2, column=0, sticky="w")
+        ctk.CTkLabel(controls, text="Max. tokens:").grid(row=2, column=0, sticky="w")
         self.tokens_var = ctk.StringVar(value=str(DEFAULT_MAX_TOKENS))
         ctk.CTkEntry(controls, textvariable=self.tokens_var, width=80).grid(
             row=2, column=1, sticky="w", padx=5, pady=2
@@ -190,28 +190,28 @@ class ReviewTab:
         btns = ctk.CTkFrame(right, fg_color="transparent")
         btns.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 10))
         self.accept_btn = ctk.CTkButton(
-            btns, text="✓ Annehmen", fg_color="#2e7d32", hover_color="#1b5e20",
+            btns, text="✓ Accept", fg_color="#2e7d32", hover_color="#1b5e20",
             command=self.accept, state="disabled",
         )
         self.accept_btn.pack(side="left", padx=(0, 5))
         self.discard_btn = ctk.CTkButton(
-            btns, text="✗ Verwerfen", fg_color="#c62828", hover_color="#8e0000",
+            btns, text="✗ Discard", fg_color="#c62828", hover_color="#8e0000",
             command=self.discard, state="disabled",
         )
         self.discard_btn.pack(side="left", padx=5)
-        ctk.CTkButton(btns, text="← Zurück", width=90, command=lambda: self.goto(self.current - 1)).pack(side="right", padx=5)
-        ctk.CTkButton(btns, text="Weiter →", width=90, command=lambda: self.goto(self.current + 1)).pack(side="right")
+        ctk.CTkButton(btns, text="← Back", width=90, command=lambda: self.goto(self.current - 1)).pack(side="right", padx=5)
+        ctk.CTkButton(btns, text="Next →", width=90, command=lambda: self.goto(self.current + 1)).pack(side="right")
 
         bottom = ctk.CTkFrame(parent, fg_color="transparent")
         bottom.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 5))
-        ctk.CTkLabel(bottom, text="Vision-Modell:").pack(side="left")
+        ctk.CTkLabel(bottom, text="Vision model:").pack(side="left")
         self.model_var = ctk.StringVar(value=DEFAULT_MODEL)
         models = list_ollama_models()
         if DEFAULT_MODEL not in models:
             models.insert(0, DEFAULT_MODEL)
         ctk.CTkOptionMenu(bottom, variable=self.model_var, values=models, width=220).pack(side="left", padx=10)
         self.run_btn = ctk.CTkButton(
-            bottom, text="Verarbeitung starten", state="disabled", command=self.run_extraction
+            bottom, text="Start processing", state="disabled", command=self.run_extraction
         )
         self.run_btn.pack(side="left", padx=10)
         self.status_label = ctk.CTkLabel(bottom, text="")
@@ -229,7 +229,7 @@ class ReviewTab:
         folder = Path(path)
         txts = [p for p in folder.glob("*.txt") if not p.stem.endswith("_final")]
         if not txts or not (folder / "images").is_dir():
-            self.folder_label.configure(text="Kein gültiger Extraktions-Ordner (txt + images/ fehlen)")
+            self.folder_label.configure(text="Not a valid extraction folder (txt + images/ missing)")
             return
         self.folder = folder
         self.txt_path = txts[0]
@@ -257,13 +257,13 @@ class ReviewTab:
         entry = self.state.get(img.stem)
         if entry:
             return entry["status"]
-        return "offen" if f"[{img.stem}]" in self.txt_path.read_text(encoding="utf-8") else "fehlt"
+        return "open" if f"[{img.stem}]" in self.txt_path.read_text(encoding="utf-8") else "missing"
 
     def rebuild_list(self):
         for b in self.item_buttons:
             b.destroy()
         self.item_buttons = []
-        icons = {"offen": "○", "accepted": "✓", "discarded": "✗", "fehlt": "–"}
+        icons = {"open": "○", "accepted": "✓", "discarded": "✗", "missing": "–"}
         for i, img in enumerate(self.images):
             st = self.status_of(img)
             btn = ctk.CTkButton(
@@ -299,7 +299,7 @@ class ReviewTab:
                 break
         self.context_box.configure(state="normal")
         self.context_box.delete("1.0", "end")
-        self.context_box.insert("1.0", ctx or f"(Tag {marker} nicht mehr in der Textdatei)")
+        self.context_box.insert("1.0", ctx or f"(marker {marker} no longer in the text file)")
         self.context_box.configure(state="disabled")
 
         entry = self.state.get(img.stem)
@@ -310,7 +310,7 @@ class ReviewTab:
             self.tokens_var.set(str(entry.get("max_tokens", DEFAULT_MAX_TOKENS)))
 
         st = self.status_of(img)
-        editable = st in ("offen", "accepted")
+        editable = st in ("open", "accepted")
         self.accept_btn.configure(state="normal" if editable else "disabled")
         self.discard_btn.configure(state="normal" if editable else "disabled")
 
@@ -348,9 +348,9 @@ class ReviewTab:
         if not self.images:
             self.run_btn.configure(state="disabled")
             return
-        open_count = sum(1 for img in self.images if self.status_of(img) == "offen")
+        open_count = sum(1 for img in self.images if self.status_of(img) == "open")
         done = len(self.images) - open_count
-        self.status_label.configure(text=f"{done}/{len(self.images)} Bilder entschieden")
+        self.status_label.configure(text=f"{done}/{len(self.images)} images decided")
         self.run_btn.configure(state="normal" if open_count == 0 else "disabled")
 
     # ---------- Verarbeitung ----------
@@ -388,7 +388,7 @@ class ReviewTab:
                 img for img in self.images
                 if self.state.get(img.stem, {}).get("status") == "accepted"
             ]
-            ui(f"Starte Bild-zu-Text mit {model} — {len(accepted)} Bilder")
+            ui(f"Starting image-to-text with {model} — {len(accepted)} images")
             for n, img in enumerate(accepted, 1):
                 entry = self.state[img.stem]
                 max_tokens = entry.get("max_tokens", DEFAULT_MAX_TOKENS)
@@ -398,23 +398,23 @@ class ReviewTab:
                 ctx = self.marker_context(orig_text, f"[{img.stem}]")
                 if ctx:
                     prompt += (
-                        "\n\nZur Einordnung: Das Bild steht an der markierten "
-                        "Stelle in diesem Dokumentausschnitt:\n"
+                        "\n\nFor orientation, the image sits at the marked "
+                        "position in this excerpt from the document:\n"
                         f"---\n{ctx}\n---"
                     )
                 max_lines = max(3, max_tokens // 20)
                 prompt += (
-                    "\nWichtigstes Ziel: Deine Antwort muss ALLE Informationen "
-                    "des Bildes zuverlässig enthalten, sodass das Bild im "
-                    "Dokument vollständig durch deinen Text ersetzt werden kann. "
-                    "Denke zuerst über den Bildaufbau nach, gib aber nur das "
-                    "fertige Ergebnis aus. Wiederhole nicht den umgebenden "
-                    "Dokumenttext."
-                    f"\nHalte dich an maximal {max_tokens} Tokens und höchstens "
-                    f"{max_lines} Zeilen — kürze durch kompakte Notation, "
-                    "niemals durch Weglassen von Information."
+                    "\nMost important goal: your answer must reliably contain "
+                    "ALL information in the image, so that the image can be "
+                    "replaced entirely by your text in the document. Think "
+                    "about how the image is built first, but output only the "
+                    "finished result. Do not repeat the surrounding document "
+                    "text."
+                    f"\nStay within {max_tokens} tokens and at most "
+                    f"{max_lines} lines — shorten by using compact notation, "
+                    "never by omitting information."
                 )
-                ui(f"[{n}/{len(accepted)}] {img.name} ({entry['prompt']}, max {max_tokens} Tokens) …")
+                ui(f"[{n}/{len(accepted)}] {img.name} ({entry['prompt']}, max {max_tokens} tokens) …")
                 result = query_vision_model(model, prompt, img, max_tokens)
                 replacement = (
                     f"[extraction_method: {entry['prompt']}]\n"
@@ -424,9 +424,9 @@ class ReviewTab:
                 text = text.replace(f"[{img.stem}]", replacement)
             final = self.txt_path.with_name(self.txt_path.stem + "_final.txt")
             final.write_text(text, encoding="utf-8")
-            ui(f"Fertig! Ergebnis: {final}")
+            ui(f"Done! Result: {final}")
         except Exception as e:  # noqa: BLE001
-            ui(f"FEHLER: {e}")
+            ui(f"ERROR: {e}")
         finally:
             self.app.after(0, self.update_run_state)
 
@@ -434,14 +434,14 @@ class ReviewTab:
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("PDF Text- & Bild-Extraktor")
+        self.title("PDF Text & Image Extractor")
         self.geometry("1100x780")
         ctk.set_appearance_mode("dark")
 
         tabs = ctk.CTkTabview(self)
         tabs.pack(fill="both", expand=True, padx=10, pady=10)
-        ExtractTab(tabs.add("1. PDF-Extraktion"), self)
-        ReviewTab(tabs.add("2. Bild-Review"), self)
+        ExtractTab(tabs.add("1. PDF Extraction"), self)
+        ReviewTab(tabs.add("2. Image Review"), self)
 
 
 if __name__ == "__main__":

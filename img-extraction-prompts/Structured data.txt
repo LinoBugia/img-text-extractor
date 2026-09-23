@@ -1,0 +1,1 @@
+Extract all data from the image as a list of "Field: value", one pair per line, values verbatim including units. Write matrices or number grids as a single line in compact notation, e.g. Kernel: [1 0 -1; 2 0 -2; 1 0 -1]. No introduction, no commentary, no interpretation — only the data lines.

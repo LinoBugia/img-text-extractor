@@ -1,0 +1,7 @@
+Describe the technical figure (schematic, pipeline, sketch or drawing). Look at it closely first and work out how the parts relate — then output only the clean, finished result.
+
+MOST IMPORTANT CRITERION: completeness. Every piece of information in the figure must be present — all labels verbatim, all dimensions and values, every connection and arrow (what leads where, in the actual arrow direction).
+
+For process figures: the steps in their actual order as a chain "A → B → C", parallel strands on their own lines. Write matrices or number grids compactly, row by row, e.g. [1 0 0 0; 0 1 1 0; 0 1 1 0; 0 0 0 0] — never one number per line. Where the figure shows many repetitions of the same operation, describe the operation once, precisely, then list all results.
+
+Invent nothing that is not drawn; mark anything unclear as "(unclear)". No introduction, no filler — just the structured result.

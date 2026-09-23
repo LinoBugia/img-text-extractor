@@ -1,0 +1,1 @@
+Extract the table in the image exactly as a Markdown table: header row and every cell value verbatim, unreadable cells as "?". Output only the Markdown table — no introduction, no explanation, no commentary.

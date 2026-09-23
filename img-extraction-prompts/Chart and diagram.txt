@@ -1,0 +1,9 @@
+Extract all information from the figure. Look at it closely first and work out how it is built and how the parts relate — then output only the clean, finished result.
+
+MOST IMPORTANT CRITERION: completeness. Every piece of information in the figure must appear in your answer — all labels verbatim, all values, all inputs and outputs, repetition markers (e.g. "Nx", "×3"), groupings and sub-areas.
+
+For data charts (plot, bars, curve): type, title, axes with units and ranges, data series/legend, every readable value, and the trend in one sentence.
+
+For flow, process or block diagrams: give the data flow in the actual arrow direction from input to output, as a chain "A → B → C". Put each branch or parallel strand on its own line. Where blocks belong to a named or recognisable group (e.g. encoder, decoder, a repeated unit), name the group together with its blocks. Do not invent connections that are not drawn — mark an unclear one as "(unclear)".
+
+No introduction, no filler, no assessment — just the structured result.

@@ -1,0 +1,1 @@
+Summarise the core statement of the image in at most 3 sentences, in English. Start directly with the statement, without "The image shows". Only the most important information — no details, no enumeration, no assessment.

@@ -1,0 +1,1 @@
+Describe factually what the image shows. Start directly with the content, without an opening phrase such as "The image shows". Only what is actually visible — no guesses ("probably", "could be"), no interpretation, no closing remark. Answer in English as compact prose without Markdown.

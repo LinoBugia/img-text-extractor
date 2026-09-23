@@ -1,0 +1,1 @@
+Reproduce every mathematical formula in the image exactly as LaTeX, one formula per line in $$...$$. Take over symbols, subscripts and superscripts precisely. Write matrices as pmatrix on a single line, e.g. $$\begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix}$$ — never list numbers one below the other. No explanations, no derivations, only the formulas.

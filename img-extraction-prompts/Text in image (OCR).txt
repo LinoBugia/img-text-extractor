@@ -1,0 +1,1 @@
+Reproduce only the text visible in the image, verbatim and in reading order. Keep meaningful line breaks. No description, no introduction, no commentary, no translation — just the text itself.
