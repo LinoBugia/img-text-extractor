@@ -1,0 +1,13 @@
+The image is an architecture diagram of a model, system or network. Study it first and work out how it is assembled — which blocks form a group, what repeats, where data enters and leaves — then output only the clean, finished result.
+
+MOST IMPORTANT CRITERION: completeness. Every block label verbatim, every input and output, every repetition marker ("Nx", "×h", "L layers"), and every connection that is drawn.
+
+NEVER UNROLL A REPETITION. A stack drawn once and marked "Nx" is one group: write its blocks a single time and put the marker after them, e.g. "Multi-Head Attention → Add & Norm → Feed Forward → Add & Norm  [Nx]". Do not repeat the blocks to represent the copies. Within a group, no block label may appear twice unless the figure genuinely draws two different blocks with the same label.
+
+Structure the answer like this:
+1. One line naming the overall structure and its top-level parts (e.g. "Encoder-decoder, encoder left, decoder right").
+2. One section per named or visually grouped part. Give its blocks as a chain in the actual arrow direction, "A → B → C", and put any repetition marker at the end of the chain.
+3. A "Connections" section for everything that is not a straight chain: residual or skip connections that bypass a block, arrows crossing from one group into another (say which block they leave and which they enter), and any input that arrives from outside its own group.
+4. A final line listing the inputs at the bottom and the outputs at the top, with their labels.
+
+Where one block receives several distinct inputs, say which is which if the diagram labels them. Do not invent connections that are not drawn — mark anything unclear as "(unclear)". No introduction, no explanation of what the architecture is for, no assessment — only what the figure shows.

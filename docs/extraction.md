@@ -4,6 +4,7 @@ How a PDF page becomes text and image markers — the pipeline steps, the two
 decisions the extractor makes on its own, and where it gets them wrong.
 
 - [Pipeline](#pipeline)
+- [Image files as input](#image-files-as-input)
 - [Text that belongs to an image](#text-that-belongs-to-an-image)
 - [Reading order](#reading-order)
 - [Limitations](#limitations)
@@ -24,6 +25,24 @@ decisions the extractor makes on its own, and where it gets them wrong.
 Because step 1 renders the page and step 2 reads that render, a PDF without a
 text layer works exactly like one with it — a scan and a born-digital document
 take the same path.
+
+## Image files as input
+
+Instead of a PDF, `process_images()` takes a list of image files and treats
+each one as a page: OCR runs on the file directly, steps 1 and 3 fall away.
+
+Two things differ from the PDF path, both following from the fact that the
+image *is* the page rather than a figure on one:
+
+- **Every input image gets a marker** at the top of its page, so it can be
+  handed to a vision model in the review. A photo of a slide then yields both
+  its OCR text and, if you want it, a description of what the slide shows.
+- **The image-internal text filter is switched off.** It would match every
+  line on the page — the image covers the whole page — and leave nothing but
+  the marker behind.
+
+The document name, and with it the output folder, comes from the single file's
+name or from the parent folder when several files are passed.
 
 ## Text that belongs to an image
 

@@ -21,7 +21,7 @@ import customtkinter as ctk
 import requests
 from PIL import Image
 
-from extract import process_pdf
+from extract import process_images, process_pdf, supported_languages
 
 OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MODEL = "qwen2.5vl:7b"
@@ -77,7 +77,7 @@ def query_vision_model(model: str, prompt: str, image_path: Path, max_tokens: in
 class ExtractTab:
     def __init__(self, parent, app):
         self.app = app
-        self.pdf_path: Path | None = None
+        self.inputs: list[Path] = []
 
         parent.grid_columnconfigure(0, weight=1)
         parent.grid_rowconfigure(3, weight=1)
@@ -85,14 +85,19 @@ class ExtractTab:
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
         ctk.CTkButton(row, text="Choose PDF …", command=self.pick_pdf).pack(side="left")
-        self.pdf_label = ctk.CTkLabel(row, text="no PDF chosen", anchor="w")
-        self.pdf_label.pack(side="left", padx=10)
+        ctk.CTkButton(row, text="Choose images …", command=self.pick_images).pack(
+            side="left", padx=(5, 0)
+        )
+        self.input_label = ctk.CTkLabel(row, text="nothing chosen", anchor="w")
+        self.input_label.pack(side="left", padx=10)
 
         row2 = ctk.CTkFrame(parent, fg_color="transparent")
         row2.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
         ctk.CTkLabel(row2, text="Language:").pack(side="left")
         self.lang_var = ctk.StringVar(value="de")
-        ctk.CTkEntry(row2, textvariable=self.lang_var, width=60).pack(side="left", padx=(5, 20))
+        ctk.CTkOptionMenu(
+            row2, variable=self.lang_var, values=supported_languages(), width=150
+        ).pack(side="left", padx=(5, 20))
 
         self.start_btn = ctk.CTkButton(
             parent, text="Start extraction", state="disabled", command=self.start
@@ -105,9 +110,26 @@ class ExtractTab:
     def pick_pdf(self):
         path = filedialog.askopenfilename(filetypes=[("PDF", "*.pdf")])
         if path:
-            self.pdf_path = Path(path)
-            self.pdf_label.configure(text=str(self.pdf_path))
-            self.start_btn.configure(state="normal")
+            self.set_inputs([Path(path)])
+
+    def pick_images(self):
+        paths = filedialog.askopenfilenames(
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.tif *.tiff *.bmp *.webp")]
+        )
+        if paths:
+            # Dialogreihenfolge ist beliebig; nach Dateiname sortieren, damit
+            # "page2" vor "page10" landet, wo die Namen es hergeben.
+            self.set_inputs(sorted(Path(p) for p in paths))
+
+    def set_inputs(self, paths: list[Path]):
+        self.inputs = paths
+        if len(paths) == 1:
+            self.input_label.configure(text=str(paths[0]))
+        else:
+            self.input_label.configure(
+                text=f"{len(paths)} images in {paths[0].parent}"
+            )
+        self.start_btn.configure(state="normal")
 
     def log_msg(self, msg: str):
         self.log.configure(state="normal")
@@ -122,10 +144,13 @@ class ExtractTab:
     def _run(self):
         ui = lambda msg: self.app.after(0, self.log_msg, msg)
         try:
-            ui(f"Starting extraction: {self.pdf_path.name}")
-            outdir = process_pdf(
-                self.pdf_path, Path("output"), self.lang_var.get(), progress=ui
-            )
+            lang, out = self.lang_var.get(), Path("output")
+            if len(self.inputs) == 1 and self.inputs[0].suffix.lower() == ".pdf":
+                ui(f"Starting extraction: {self.inputs[0].name}")
+                outdir = process_pdf(self.inputs[0], out, lang, progress=ui)
+            else:
+                ui(f"Starting extraction: {len(self.inputs)} image(s)")
+                outdir = process_images(self.inputs, out, lang, progress=ui)
             ui(f"Done: {outdir}")
             ui("→ Switch to the 'Image Review' tab to work through the images.")
         except Exception as e:  # noqa: BLE001 — alles im Log zeigen statt crashen
@@ -161,8 +186,14 @@ class ReviewTab:
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(0, weight=1)
 
-        self.preview = ctk.CTkLabel(right, text="Image preview", anchor="center")
-        self.preview.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        # Die Vorschau wird per place() zentriert, damit ihre Größe die Zelle
+        # nicht aufzieht — sonst würde das Skalieren eine Endlosschleife auslösen.
+        self.preview_holder = ctk.CTkFrame(right, fg_color="transparent")
+        self.preview_holder.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.preview = ctk.CTkLabel(self.preview_holder, text="Image preview", anchor="center")
+        self.preview.place(relx=0.5, rely=0.5, anchor="center")
+        self.preview_holder.bind("<Configure>", lambda _e: self.render_preview())
+        self.pil_image: Image.Image | None = None
 
         self.context_box = ctk.CTkTextbox(right, height=90, state="disabled", wrap="word")
         self.context_box.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 5))
@@ -276,27 +307,30 @@ class ReviewTab:
             self.item_buttons.append(btn)
         self.update_run_state()
 
+    def render_preview(self):
+        """Skaliert die Vorschau auf den aktuell verfügbaren Platz."""
+        if self.pil_image is None:
+            return
+        w = max(60, self.preview_holder.winfo_width() - 8)
+        h = max(60, self.preview_holder.winfo_height() - 8)
+        fitted = self.pil_image.copy()
+        fitted.thumbnail((w, h))
+        self.preview.configure(
+            image=ctk.CTkImage(light_image=fitted, size=fitted.size), text=""
+        )
+
     def goto(self, index: int):
         if not self.images:
             return
         self.current = max(0, min(index, len(self.images) - 1))
         img = self.images[self.current]
 
-        pil = Image.open(img)
-        pil.thumbnail((520, 400))
-        self.preview.configure(
-            image=ctk.CTkImage(light_image=pil, size=pil.size),
-            text="",
-        )
+        self.pil_image = Image.open(img)
+        self.render_preview()
 
         text = self.txt_path.read_text(encoding="utf-8")
         marker = f"[{img.stem}]"
-        lines = text.splitlines()
-        ctx = ""
-        for i, line in enumerate(lines):
-            if marker in line:
-                ctx = "\n".join(lines[max(0, i - 3): i + 4])
-                break
+        ctx = self.marker_context(text, marker)
         self.context_box.configure(state="normal")
         self.context_box.delete("1.0", "end")
         self.context_box.insert("1.0", ctx or f"(marker {marker} no longer in the text file)")
@@ -373,7 +407,7 @@ class ReviewTab:
             if marker in line:
                 return "\n".join(
                     lines[max(0, i - radius): i]
-                    + ["<<< HIER STEHT DAS BILD >>>"]
+                    + ["<<< THE IMAGE GOES HERE >>>"]
                     + lines[i + 1: i + 1 + radius]
                 )
         return ""
@@ -440,7 +474,7 @@ class App(ctk.CTk):
 
         tabs = ctk.CTkTabview(self)
         tabs.pack(fill="both", expand=True, padx=10, pady=10)
-        ExtractTab(tabs.add("1. PDF Extraction"), self)
+        ExtractTab(tabs.add("1. Extraction"), self)
         ReviewTab(tabs.add("2. Image Review"), self)
 
 

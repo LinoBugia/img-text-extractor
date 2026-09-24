@@ -18,11 +18,19 @@ is the `threshold` parameter of `lies_inside_image()`, default `0.5`. See
 
 | Flag | Default | Meaning |
 |------|---------|---------|
+| `inputs` | — | One PDF, or one or more image files (`.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`, `.bmp`, `.webp`) |
 | `-o`, `--output` | `output` | Root directory for the output |
 | `--lang` | `de` | PaddleOCR language, e.g. `de`, `en`, `ch` |
+| `--list-langs` | — | Print all supported language codes and exit |
+
+Mixing a PDF with image files is rejected, as is passing more than one PDF.
 
 The language selects the recognition model. `de` uses the Latin multi-language
 model, which also covers English text; pick `en` for English-only documents.
+`supported_languages()` reads the full list — 110 codes with PaddleOCR 3.7 —
+out of the library itself, so the GUI dropdown cannot drift from what the
+installed version actually accepts. The codes in `COMMON_LANGS` are sorted to
+the top of that list; everything else follows alphabetically.
 
 ## GUI and vision model — `gui.py`
 

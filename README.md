@@ -1,15 +1,19 @@
 # PDF Text & Image Extractor
 
-Turns a PDF into a single plain-text file in which the figures have become
-text. OCR reads the pages, so scanned documents work like born-digital ones;
-embedded images are extracted and marked at their position, and a local vision
-model writes each image's content back into the document in place.
+Turns a PDF — or a stack of scans — into a single plain-text file in which the
+figures have become text. OCR reads the pages, so scanned documents work like
+born-digital ones; embedded images are extracted and marked at their position,
+and a local vision model writes each image's content back into the document in
+place.
 
-You decide per image: discard it, or assign one of ten extraction prompts — a
-chart becomes a list of values, a table becomes Markdown, a formula becomes
+You decide per image: discard it, or assign one of eleven extraction prompts —
+a chart becomes a list of values, a table becomes Markdown, a formula becomes
 LaTeX. Nothing leaves the machine.
 
 ![The Image Review tab: image list with status per image, preview of the selected figure, the surrounding document text, and the prompt and token controls](docs/img/review-gui.png)
+
+*The figure under review is from Vaswani et al., [Attention Is All You
+Need](https://arxiv.org/abs/1706.03762).*
 
 A figure in the extracted text starts as a marker. Accepting it with a prompt
 replaces that marker in place, wrapped so a downstream parser can find the
@@ -52,11 +56,14 @@ review work without it.
 .venv/bin/python gui.py                       # extract, review, describe
 
 .venv/bin/python extract.py report.pdf        # extraction only, no GUI
+.venv/bin/python extract.py scan1.png scan2.png --lang en
 .venv/bin/python extract.py report.pdf -o results --lang en
+.venv/bin/python extract.py --list-langs      # 110 OCR language codes
 ```
 
-`extract.py` takes `-o/--output` and `--lang`; both are listed with their
-defaults in [docs/configuration.md](docs/configuration.md).
+Image files are treated as one page each, so a folder of scans works like a
+PDF. Every flag is listed with its default in
+[docs/configuration.md](docs/configuration.md).
 
 ## Every image is a decision
 
@@ -73,9 +80,26 @@ Decisions persist in `review_state.json`, so a long document can be reviewed
 across several sittings. The walkthrough is in [docs/gui.md](docs/gui.md), the
 prompt library in [docs/prompts.md](docs/prompts.md).
 
+## How to add a custom extraction mode
+
+A mode is one `.txt` file in `img-extraction-prompts/`. The file name becomes
+the entry in the dropdown and the label written into `[extraction_method: …]`;
+the file content is the prompt.
+
+```bash
+cat > "img-extraction-prompts/Legal clause.txt" <<'EOF'
+Extract every clause visible in the image, one per line, numbered as in the
+document. Quote the wording verbatim. No summary, no interpretation.
+EOF
+```
+
+Restart the app and the mode is in the list — the library is read once at
+startup, not per run. What the app appends to your text, and the house style
+the shipped prompts follow, is in [docs/prompts.md](docs/prompts.md).
+
 ## Output
 
-Each PDF produces a folder named after the document:
+Each document — a PDF, or a set of images — produces a folder named after it:
 
 ```
 output/<docname>/
@@ -95,7 +119,7 @@ can be reviewed again with different prompts.
 |----------|----------|
 | [docs/extraction.md](docs/extraction.md) | Pipeline steps, the image-internal text filter, reading order, limitations |
 | [docs/gui.md](docs/gui.md) | Both tabs, the review loop, how processing runs |
-| [docs/prompts.md](docs/prompts.md) | The ten prompts, adding your own, output length |
+| [docs/prompts.md](docs/prompts.md) | The eleven prompts, adding your own, output length |
 | [docs/configuration.md](docs/configuration.md) | Every constant and CLI flag with its default |
 
 ## Project structure

@@ -10,7 +10,7 @@ loaded, what the app appends to each one, and how to add your own.
 
 ## The shipped prompts
 
-Ten prompts ship with the project. The file name is what the GUI shows and
+Eleven prompts ship with the project. The file name is what the GUI shows and
 what ends up in the `[extraction_method: …]` marker, so it is worth keeping
 short and descriptive.
 
@@ -24,6 +24,7 @@ short and descriptive.
 | `Screenshot and UI.txt` | Window title plus the text, code and data actually shown |
 | `Photo in detail.txt` | Subject first, then objects, people and surroundings |
 | `Technical drawing.txt` | Parts, labels, dimensions, and what the arrows connect |
+| `Architecture diagram.txt` | Model or system architectures: grouped stacks, repetition markers, skip and cross connections |
 | `Short summary.txt` | The core statement in at most three sentences |
 | `Structured data.txt` | All data as `Field: value` lines |
 
@@ -31,7 +32,8 @@ They share a common shape, learned from what small vision models get wrong on
 document figures: completeness is named as the single most important criterion,
 thinking about the layout first is explicitly allowed but only the finished
 result may be printed, invented connections are forbidden and unclear ones must
-be marked, and matrices must use compact notation (`[1 0 -1; 2 0 -2]`) rather
+be marked, repetitions are stated with their marker instead of being unrolled,
+and matrices must use compact notation (`[1 0 -1; 2 0 -2]`) rather
 than one number per line.
 
 ## How prompts are loaded
@@ -41,10 +43,14 @@ time: the file stem becomes the display name, the stripped file content becomes
 the prompt. Empty files are skipped, and if the directory yields nothing the
 app exits with an error rather than starting with an empty dropdown.
 
-To add one, drop a file into the directory and restart the app — the library is
-read once at startup, not per run. Name the file the way it should read in the
-dropdown, because that name is also written into the output marker and is what
-a downstream consumer sees.
+Adding one is a file drop, described in the README under
+[How to add a custom extraction mode](../README.md#how-to-add-a-custom-extraction-mode).
+
+The name matters beyond the dropdown: it is written into the output marker, so
+it is also what a downstream consumer reads out of `[extraction_method: …]`.
+Keep it short and then leave it alone — renaming a prompt file orphans every
+`review_state.json` entry that already points at the old name, and those images
+have to be decided again.
 
 ## What the app adds
 
@@ -70,6 +76,12 @@ than a short answer, the limit is also stated in the prompt, together with a
 line budget derived from it as `max(3, tokens // 20)` — 5 lines at the default
 of 100 tokens.
 
-Raise it for figures that genuinely carry a lot: a dense table or a multi-panel
-diagram needs several hundred tokens, while a decorative photo needs far less
-than the default.
+Raise it for figures that genuinely carry a lot: a dense table, an architecture
+diagram or a multi-panel figure needs several hundred tokens, while a
+decorative photo needs far less than the default.
+
+> A repeated stack is where small models fail hardest. Asked for a chain of
+> blocks, they will happily write out all six copies of a layer marked `Nx`
+> until the token budget runs out. `Architecture diagram.txt` forbids that
+> explicitly; if you write a prompt that asks for a sequence, forbid it there
+> too.

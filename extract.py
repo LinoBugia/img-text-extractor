@@ -9,6 +9,7 @@ bounding boxes drawn on it is saved to <output>/<docname>/annotated_pages/.
 """
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -19,6 +20,40 @@ from paddleocr import PaddleOCR
 
 DPI = 200  # Renderauflösung für OCR und annotierte Seiten
 MIN_CONFIDENCE = 0.5  # OCR-Zeilen unterhalb dieser Confidence werden verworfen
+
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
+# Reihenfolge im Sprach-Dropdown: gängige zuerst, Rest alphabetisch
+COMMON_LANGS = ["de", "en", "fr", "es", "it", "pt", "nl", "pl",
+                "ch", "chinese_cht", "japan", "korean", "ru"]
+
+
+def supported_languages() -> list[str]:
+    """Von PaddleOCR unterstützte Sprachcodes, gängige zuerst.
+
+    Die Liste wird aus PaddleOCR selbst gelesen, damit sie bei einem Update
+    nicht veraltet. Die Konstanten liegen in einem privaten Modul — ändert
+    sich dessen Pfad, bleibt die kurze Auswahl aus COMMON_LANGS übrig.
+    """
+    try:
+        from paddleocr._pipelines.ocr import (
+            ARABIC_LANGS, CYRILLIC_LANGS, DEVANAGARI_LANGS, ESLAV_LANGS, LATIN_LANGS,
+        )
+        codes = set(LATIN_LANGS) | set(ARABIC_LANGS) | set(ESLAV_LANGS)
+        codes |= set(CYRILLIC_LANGS) | set(DEVANAGARI_LANGS)
+        codes |= {"ch", "en", "korean", "japan", "chinese_cht", "te", "ka", "ta"}
+    except Exception:
+        codes = set(COMMON_LANGS)
+    head = [c for c in COMMON_LANGS if c in codes]
+    return head + sorted(codes - set(head))
+
+
+def make_ocr(lang: str) -> PaddleOCR:
+    return PaddleOCR(
+        lang=lang,
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+    )
 
 
 def page_to_pil(page: fitz.Page, zoom: float) -> Image.Image:
@@ -160,13 +195,7 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
     annotated_dir.mkdir(parents=True, exist_ok=True)
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    ocr = PaddleOCR(
-        lang=lang,
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_textline_orientation=False,
-    )
-
+    ocr = make_ocr(lang)
     doc = fitz.open(pdf_path)
     zoom = DPI / 72
     img_counter = 1
@@ -201,22 +230,91 @@ def process_pdf(pdf_path: Path, output_root: Path, lang: str, progress=print) ->
     return outdir
 
 
+def process_images(
+    paths: list[Path], output_root: Path, lang: str,
+    docname: str | None = None, progress=print,
+) -> Path:
+    """Wie process_pdf, aber mit Bilddateien statt PDF — ein Bild je Seite.
+
+    Das Bild selbst ist hier die Seite, es gibt also keine eingebetteten
+    Bilder. Jedes Eingabebild bekommt trotzdem einen Marker, damit es im
+    Review einem Vision-Modell vorgelegt werden kann; der Filter für
+    bildinternen Text entfällt, weil sonst der ganze OCR-Text wegfiele.
+    """
+    paths = [Path(p) for p in paths]
+    if docname is None:
+        docname = paths[0].stem if len(paths) == 1 else paths[0].parent.name
+
+    outdir = output_root / docname
+    annotated_dir = outdir / "annotated_pages"
+    images_dir = outdir / "images"
+    annotated_dir.mkdir(parents=True, exist_ok=True)
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    ocr = make_ocr(lang)
+    txt_lines: list[str] = []
+
+    for page_no, path in enumerate(paths, start=1):
+        progress(f"Image {page_no}/{len(paths)} ...")
+        page_img = Image.open(path).convert("RGB")
+        text_elements = ocr_page(ocr, page_img)
+
+        name = f"image{page_no}_dok_{docname}"
+        shutil.copyfile(path, images_dir / f"{name}{path.suffix.lower()}")
+
+        txt_lines.append(f"===== Page {page_no} =====")
+        txt_lines.append(f"[{name}]")
+        txt_lines += [el["content"] for el in sort_reading_order(text_elements)]
+        txt_lines.append("")
+
+        annotate_page(page_img, text_elements).save(
+            annotated_dir / f"page{page_no:03d}.png"
+        )
+
+    (outdir / f"{docname}.txt").write_text("\n".join(txt_lines), encoding="utf-8")
+    return outdir
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pdf", type=Path, help="Path to the input PDF")
+    parser.add_argument(
+        "inputs", type=Path, nargs="*",
+        help="One PDF, or one or more image files (png, jpg, tiff, bmp, webp)",
+    )
     parser.add_argument(
         "-o", "--output", type=Path, default=Path("output"),
         help="Root directory for the output (default: ./output)",
     )
     parser.add_argument(
-        "--lang", default="de", help="OCR language (default: de)"
+        "--lang", default="de",
+        help="OCR language (default: de), see --list-langs",
+    )
+    parser.add_argument(
+        "--list-langs", action="store_true",
+        help="Print the supported OCR language codes and exit",
     )
     args = parser.parse_args()
 
-    if not args.pdf.is_file():
-        sys.exit(f"PDF not found: {args.pdf}")
+    if args.list_langs:
+        print(" ".join(supported_languages()))
+        return
+    if not args.inputs:
+        parser.error("give a PDF or one or more image files (or --list-langs)")
 
-    outdir = process_pdf(args.pdf, args.output, args.lang)
+    for p in args.inputs:
+        if not p.is_file():
+            sys.exit(f"File not found: {p}")
+
+    suffixes = {p.suffix.lower() for p in args.inputs}
+    if suffixes == {".pdf"}:
+        if len(args.inputs) > 1:
+            sys.exit("Pass a single PDF, or one or more image files.")
+        outdir = process_pdf(args.inputs[0], args.output, args.lang)
+    elif suffixes <= IMAGE_SUFFIXES:
+        outdir = process_images(args.inputs, args.output, args.lang)
+    else:
+        sys.exit(f"Mixed or unsupported input types: {', '.join(sorted(suffixes))}")
+
     print(f"Done: {outdir}")
 
 

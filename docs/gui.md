@@ -9,15 +9,26 @@ reviewing every extracted image before a vision model describes it.
 
 The window opens at 1100×780 in dark mode.
 
-- [Tab 1: PDF Extraction](#tab-1-pdf-extraction)
+- [Tab 1: Extraction](#tab-1-extraction)
 - [Tab 2: Image Review](#tab-2-image-review)
 - [Processing](#processing)
 
-## Tab 1: PDF Extraction
+## Tab 1: Extraction
 
-Pick a PDF, set the OCR language, start the extraction. It runs in a background
-thread with a live log, and produces the same output as the CLI — the GUI calls
-the very same `process_pdf()`.
+Two input buttons: **Choose PDF …** takes a single PDF, **Choose images …**
+takes any number of PNG, JPEG, TIFF, BMP or WebP files. Next to them, the OCR
+language as a dropdown listing every code PaddleOCR supports, read from the
+library itself so it cannot go stale.
+
+The extraction runs in a background thread with a live log and produces the
+same output as the CLI — the GUI calls the very same `process_pdf()` and
+`process_images()`.
+
+With image input, each file becomes one page in reading order, sorted by file
+name. The output folder is named after the single image, or after the parent
+folder when several are selected. Each image also gets its own marker, so it
+can be handed to a vision model in the review just like a figure inside a PDF —
+see [extraction.md](extraction.md#image-files-as-input).
 
 ## Tab 2: Image Review
 
@@ -34,10 +45,12 @@ The image list on the left shows every extracted image with its status:
 | `✗` | discarded | marker already removed from the `.txt` |
 | `–` | missing | no marker for this image in the `.txt` any more |
 
-For the selected image you see a preview scaled to fit 520×400 and, below it,
-the surrounding document text — six lines either side of the marker. That
-context is what tells you whether a figure carries information or is decoration,
-and the same excerpt is later handed to the vision model.
+For the selected image you see a preview scaled to whatever space the window
+currently gives it and, below it, the surrounding document text — six lines
+either side of the marker, with the marker itself shown as a placeholder. That
+context is what tells you whether a figure carries information or is
+decoration, and it is exactly the excerpt later handed to the vision model, so
+what you read in the review is what the model will read.
 
 Per image you decide:
 
